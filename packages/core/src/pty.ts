@@ -70,6 +70,12 @@ export type Attachment = {
   readonly detach: () => void
 }
 
+export type ReadResult = {
+  readonly info: Info
+  readonly output: string
+  readonly cursor: number
+}
+
 export class NotFoundError extends Schema.TaggedError<NotFoundError>()("Pty.NotFoundError", {
   ptyID: ID,
 }) {}
@@ -81,6 +87,7 @@ export class ExitedError extends Schema.TaggedError<ExitedError>()("Pty.ExitedEr
 export interface Interface {
   readonly list: () => Effect.Effect<Info[]>
   readonly get: (id: ID) => Effect.Effect<Info, NotFoundError>
+  readonly read: (id: ID, cursor?: number) => Effect.Effect<ReadResult, NotFoundError>
   readonly create: (input: CreateInput) => Effect.Effect<Info>
   readonly update: (id: ID, input: UpdateInput) => Effect.Effect<Info, NotFoundError>
   readonly remove: (id: ID) => Effect.Effect<void, NotFoundError>
@@ -163,10 +170,26 @@ const layer = Layer.effect(
       return (yield* requireSession(id)).info
     })
 
+    const read = Effect.fn("Pty.read")(function* (id: ID, cursor?: number) {
+      const session = yield* requireSession(id)
+      const end = session.cursor
+      const from =
+        cursor === -1
+          ? end
+          : cursor !== undefined && Number.isSafeInteger(cursor)
+            ? Math.max(0, cursor)
+            : 0
+      return {
+        info: session.info,
+        output: session.buffer.slice(Math.max(0, from - (end - session.buffer.length))),
+        cursor: end,
+      }
+    })
+
     const create = Effect.fn("Pty.create")(function* (input: CreateInput) {
       const id = ID.ascending()
       const command = input.command || (yield* shell.resolve({ priority: "config" }))
-      const args = ShellSelect.login(command) ? [...(input.args ?? []), "-l"] : [...(input.args ?? [])]
+      const args = input.args?.length ? [...input.args] : ShellSelect.login(command) ? ["-l"] : []
       const cwd = input.cwd || location.directory
       const env = {
         ...process.env,
@@ -300,7 +323,7 @@ const layer = Layer.effect(
       }
     })
 
-    return Service.of({ list, get, create, update, remove, write, attach })
+    return Service.of({ list, get, read, create, update, remove, write, attach })
   }),
 )
 

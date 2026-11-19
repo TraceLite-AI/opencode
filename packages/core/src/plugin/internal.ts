@@ -90,6 +90,9 @@ import { QuestionTool } from "../tool/plugin/question.js"
 import { ReadTool } from "../tool/plugin/read.js"
 import { ArtifactTools } from "../tool/plugin/artifact.js"
 import { AutomationTools } from "../tool/plugin/automation.js"
+import { PersistentPty } from "../persistent-pty.js"
+import { Pty } from "../pty.js"
+import { PtyTool } from "../tool/plugin/pty.js"
 import { ShellTool } from "../tool/plugin/shell.js"
 import { SkillTool } from "../tool/plugin/skill.js"
 import { SubagentTool } from "../tool/plugin/subagent.js"
@@ -169,6 +172,8 @@ const services = [
   SessionInstructions.Service,
   SubagentJob.Service,
   SharedCache.Service,
+  PersistentPty.Service,
+  Pty.Service,
   Shell.Service,
   ShellSelect.Service,
   Snapshot.Service,
@@ -232,6 +237,8 @@ export const requirements = LayerNode.group([
   SessionInstructions.node,
   SubagentJob.node,
   SharedCache.node,
+  PersistentPty.node,
+  Pty.node,
   Shell.node,
   ShellSelect.node,
   Snapshot.node,
@@ -281,6 +288,7 @@ const pre = [
   ReadTool.Plugin,
   ArtifactTools.Plugin,
   AutomationTools.Plugin,
+  PtyTool.Plugin,
   ShellTool.Plugin,
   SkillTool.Plugin,
   SubagentTool.Plugin,
